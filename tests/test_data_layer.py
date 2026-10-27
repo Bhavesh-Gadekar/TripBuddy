@@ -159,3 +159,4 @@ def test_seeded_data_content_and_id_numbers():
             assert num.startswith("ID-") and num.endswith("-DEMO")
     finally:
         db.close()
+

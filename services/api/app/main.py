@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from tripbuddy_core import __version__ as core_version
 from tripbuddy_core.config import settings
+from app.routes.listings import router as listings_router
 
 app = FastAPI(title="TripBuddy API", version="0.1.0")
 
@@ -12,6 +13,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(listings_router)
 
 
 @app.get("/health")

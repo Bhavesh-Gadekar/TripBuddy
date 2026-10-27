@@ -147,3 +147,4 @@ def downgrade() -> None:
     op.drop_table('reviews')
     op.drop_table('listings')
     op.drop_table('users')
+

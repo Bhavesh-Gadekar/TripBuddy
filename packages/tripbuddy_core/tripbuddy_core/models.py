@@ -146,3 +146,4 @@ class ConciergeToolCall(Base):
     __table_args__ = (
         Index("idx_concierge_tool_calls_session", "session_id"),
     )
+

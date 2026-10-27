@@ -636,3 +636,4 @@ def compute_database_hash():
 
 if __name__ == "__main__":
     seed_database()
+

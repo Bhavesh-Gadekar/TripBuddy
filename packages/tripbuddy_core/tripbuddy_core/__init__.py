@@ -10,6 +10,18 @@ from tripbuddy_core.models import (
     ConciergeToolCall,
 )
 
+from tripbuddy_core.services import (
+    get_listings_service,
+    get_listing_detail_service,
+)
+from tripbuddy_core.schemas import (
+    ListingCard,
+    ListingDetail,
+    PaginatedListings,
+    HostSummary,
+    ReviewOut,
+)
+
 __version__ = "0.1.0"
 
 __all__ = [
@@ -20,5 +32,12 @@ __all__ = [
     "Message",
     "ConciergeSession",
     "ConciergeToolCall",
+    "get_listings_service",
+    "get_listing_detail_service",
+    "ListingCard",
+    "ListingDetail",
+    "PaginatedListings",
+    "HostSummary",
+    "ReviewOut",
 ]
 
