@@ -9,6 +9,8 @@ from tripbuddy_core.schemas import (
     HostSummary,
     ReviewOut,
     PaginatedListings,
+    UserProfilePublic,
+    UserProfileFull,
 )
 
 
@@ -174,5 +176,45 @@ def get_listing_detail_service(db: Session, listing_id: str) -> ListingDetail:
             )
             for r in reviews
         ],
+    )
+
+
+def mask_verified_id(id_number: str) -> str:
+    """Mask verified ID number showing only last 4 characters, e.g. ***-DEMO."""
+    if not id_number or len(id_number) <= 4:
+        return "****"
+    return f"***{id_number[-4:]}"
+
+
+def get_user_profile_full(db: Session, user_id: str) -> UserProfileFull:
+    """Service function to retrieve full unmasked user profile for tools/backend."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise ResourceNotFoundError(f"User '{user_id}' not found")
+
+    return UserProfileFull(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        verified_id_number=user.verified_id_number,  # Raw full fictional value
+        is_host=user.is_host,
+        avatar=user.avatar,
+        superhost=user.superhost,
+        joined_date=user.joined_date,
+    )
+
+
+def get_user_profile_masked(db: Session, user_id: str) -> UserProfilePublic:
+    """Service function to retrieve profile for website UI with masked ID."""
+    full_profile = get_user_profile_full(db, user_id)
+    return UserProfilePublic(
+        id=full_profile.id,
+        name=full_profile.name,
+        email=full_profile.email,
+        masked_verified_id_number=mask_verified_id(full_profile.verified_id_number),
+        is_host=full_profile.is_host,
+        avatar=full_profile.avatar,
+        superhost=full_profile.superhost,
+        joined_date=full_profile.joined_date,
     )
 
