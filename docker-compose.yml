@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tripbuddy_postgres
+    environment:
+      POSTGRES_USER: tripbuddy
+      POSTGRES_PASSWORD: tripbuddy
+      POSTGRES_DB: tripbuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tripbuddy -d tripbuddy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    container_name: tripbuddy_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://tripbuddy:tripbuddy@postgres:5432/tripbuddy
+      - MCP_SERVER_URL=http://mcp_server:8001/mcp
+      - LLM_PROVIDER=anthropic
+      - LLM_MODEL=claude-3-5-sonnet-20241022
+      - LLM_API_KEY=mock-api-key
+      - REQUIRE_CONFIRMATION=false
+      - CONCIERGE_MAX_STEPS=8
+      - JWT_SECRET=fictional-demo-jwt-secret-not-for-production
+    ports:
+      - "8000:8000"
+
+  mcp_server:
+    build:
+      context: .
+      dockerfile: services/mcp_server/Dockerfile
+    container_name: tripbuddy_mcp_server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://tripbuddy:tripbuddy@postgres:5432/tripbuddy
+    ports:
+      - "8001:8001"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tripbuddy_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  pgdata:
+
