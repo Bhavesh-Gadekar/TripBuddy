@@ -103,3 +103,38 @@ class UserProfileFull(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Booking Flow Schemas
+class PriceBreakdown(BaseModel):
+    nights: int
+    price_per_night: int
+    subtotal: int
+    service_fee: int
+    total: int
+
+
+class BookingCreate(BaseModel):
+    listing_id: str
+    checkin: str  # YYYY-MM-DD
+    checkout: str  # YYYY-MM-DD
+    guests: int
+
+
+class BookingOut(BaseModel):
+    id: str
+    reference: str
+    user_id: str
+    listing_id: str
+    checkin: str
+    checkout: str
+    guests: int
+    total_price: int
+    status: str
+    created_at: str
+    listing_title: Optional[str] = None
+    listing_city: Optional[str] = None
+    listing_image: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+

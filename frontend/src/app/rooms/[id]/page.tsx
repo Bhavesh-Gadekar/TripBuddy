@@ -319,7 +319,10 @@ export default function ListingDetailPage() {
             {/* Reserve Action Button */}
             <button
               type="button"
-              className="w-full py-3.5 bg-primary hover:bg-[#e03150] text-white font-bold rounded-full text-sm transition-colors shadow-md"
+              onClick={() => {
+                window.location.href = `/book?listing_id=${listing.id}&checkin=${checkin}&checkout=${checkout}&guests=${guests}`;
+              }}
+              className="w-full py-3.5 bg-primary hover:bg-[#e03150] text-white font-bold rounded-full text-sm transition-colors shadow-md block text-center"
             >
               Reserve
             </button>
