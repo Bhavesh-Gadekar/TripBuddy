@@ -13,7 +13,7 @@ test:
 	docker compose exec api pytest /app/tests
 
 reseed:
-	@echo "Reseed target stub for Phase 0 (will truncate and seed in Phase 1)"
+	docker compose exec api python /app/scripts/seed.py
 
 clean:
 	docker compose down -v

@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from tripbuddy_core.config import settings
 from tripbuddy_core.db import Base
+import tripbuddy_core.models  # load models for alembic metadata
 
 # this is the Alembic Config object
 config = context.config
