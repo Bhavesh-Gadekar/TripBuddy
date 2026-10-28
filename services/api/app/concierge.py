@@ -462,8 +462,16 @@ async def _run_gemini_loop(
                 ),
             )
         except Exception as exc:
+            exc_str = str(exc)
+            # Handle quota exhaustion (429) — raise a clean, user-facing error immediately
+            if "429" in exc_str or "RESOURCE_EXHAUSTED" in exc_str:
+                logger.warning(f"Gemini quota exhausted: {exc}")
+                raise RuntimeError(
+                    "The AI Concierge has reached its daily request limit on the free tier. "
+                    "Please try again tomorrow or upgrade the API plan."
+                )
             # If primary model is unavailable (503 / 404), fall back to fast, lightweight model
-            if resolved_model != "gemini-3.5-flash-lite" and any(code in str(exc) for code in ["503", "404", "UNAVAILABLE", "NOT_FOUND"]):
+            if resolved_model != "gemini-3.5-flash-lite" and any(code in exc_str for code in ["503", "404", "UNAVAILABLE", "NOT_FOUND"]):
                 logger.warning(f"Gemini model {resolved_model} error ({exc}); falling back to gemini-3.5-flash-lite")
                 resolved_model = "gemini-3.5-flash-lite"
                 response = await client.aio.models.generate_content(

@@ -288,12 +288,21 @@ export default function ConciergeChat() {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
+      const errMsg: string = err.message || "";
+      const isQuota =
+        errMsg.includes("daily request limit") ||
+        errMsg.includes("RESOURCE_EXHAUSTED") ||
+        errMsg.includes("quota") ||
+        errMsg.includes("503");
+      const errorContent = isQuota
+        ? "⚠️ The AI Concierge has reached its daily usage limit on the free tier. Please try again tomorrow — the quota resets every 24 hours."
+        : `Sorry, I ran into an issue: ${errMsg || "Something went wrong. Please try again."}`;
       setMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: "assistant",
-          content: `Error: ${err.message || "Something went wrong. Please try again."}`,
+          content: errorContent,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);

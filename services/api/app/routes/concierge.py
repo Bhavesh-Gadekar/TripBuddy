@@ -92,7 +92,9 @@ async def chat_with_concierge(
         if session_to_update:
             session_to_update.status = "failed"
             db.commit()
+        msg = str(e)
+        is_quota = "daily request limit" in msg or "RESOURCE_EXHAUSTED" in msg or "429" in msg
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Concierge execution error: {str(e)}",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE if is_quota else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Concierge execution error: {msg}",
         )
