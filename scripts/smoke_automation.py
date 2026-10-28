@@ -110,12 +110,18 @@ def run_smoke_test():
     session_id = chat_data.get("session_id", "")
     steps = chat_data.get("steps", [])
 
-    print("✓ Concierge chat turn completed!")
+    print("\n✓ Concierge chat turn completed!")
     print(f"  Session ID: {session_id}")
-    print(f"  Assistant Reply: {reply}")
-    print(f"  Tool steps reported in API response: {len(steps)}")
+    print("\n" + "┌" + "─" * 68 + "┐")
+    print("│                     ASSISTANT CONCIERGE REPLY                      │")
+    print("├" + "─" * 68 + "┤")
+    for line in reply.splitlines():
+        print(f"│  {line}")
+    print("└" + "─" * 68 + "┘")
+    print(f"\n  Tool steps executed: {len(steps)}")
     for i, step in enumerate(steps, 1):
-        print(f"    Step {i}: Tool='{step.get('tool')}', Args={json.dumps(step.get('arguments'))}")
+        print(f"    [{i}] Tool: {step.get('tool')}()")
+        print(f"        Arguments: {json.dumps(step.get('arguments'))}")
 
     # Step 5: Direct Database Audit Verification
     print("\n[Step 5/5] Querying database records for ground-truth audit verification...")
