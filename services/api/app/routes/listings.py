@@ -1,11 +1,17 @@
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from tripbuddy_core.db import get_db
-from tripbuddy_core.services import get_listings_service, get_listing_detail_service
-from tripbuddy_core.schemas import PaginatedListings, ListingDetail
-from tripbuddy_core.errors import ResourceNotFoundError
+from tripbuddy_core.models import User
+from tripbuddy_core.services import (
+    get_listings_service,
+    get_listing_detail_service,
+    create_review_service,
+)
+from tripbuddy_core.schemas import PaginatedListings, ListingDetail, ReviewCreate, ReviewOut
+from tripbuddy_core.errors import ResourceNotFoundError, ValidationError
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -51,4 +57,26 @@ def get_listing(listing_id: str, db: Session = Depends(get_db)):
         return get_listing_detail_service(db=db, listing_id=listing_id)
     except ResourceNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{listing_id}/reviews", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
+def submit_review(
+    listing_id: str,
+    review_in: ReviewCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Submit a review for any listing. Any logged-in user may review without a completed booking."""
+    try:
+        return create_review_service(
+            db=db,
+            user=current_user,
+            listing_id=listing_id,
+            rating=review_in.rating,
+            text=review_in.text,
+        )
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

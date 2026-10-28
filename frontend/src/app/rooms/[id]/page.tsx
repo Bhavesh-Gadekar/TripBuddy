@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/navigation";
-import { Star, ShieldCheck, Share, Heart, MapPin, User, Sparkles } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Star, ShieldCheck, Share, Heart, MapPin, User, Sparkles, MessageSquare, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ReviewData {
   id: string;
@@ -39,7 +40,9 @@ interface ListingDetailData {
 
 export default function ListingDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const listingId = params.id as string;
+  const { user } = useAuth();
 
   const [listing, setListing] = useState<ListingDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,55 @@ export default function ListingDetailPage() {
   const [checkin, setCheckin] = useState("2026-12-15");
   const [checkout, setCheckout] = useState("2026-12-18");
   const [guests, setGuests] = useState(2);
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewText.trim()) {
+      setReviewError("Please write a review before submitting.");
+      return;
+    }
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      const res = await fetch(`${apiUrl}/listings/${listingId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rating: reviewRating, text: reviewText }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to submit review");
+      }
+      const newReview = await res.json();
+      setListing((prev) => {
+        if (!prev) return prev;
+        const updatedReviews = [newReview, ...prev.reviews];
+        const newRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
+        return {
+          ...prev,
+          reviews: updatedReviews,
+          rating: Math.round(newRating * 10) / 10,
+          review_count: updatedReviews.length,
+        };
+      });
+      setReviewText("");
+      setShowReviewModal(false);
+    } catch (err: any) {
+      setReviewError(err.message || "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchListingDetail() {
@@ -229,12 +281,111 @@ export default function ListingDetailPage() {
 
           {/* Reviews List */}
           <div>
-            <div className="flex items-center gap-2 text-xl font-bold text-ink mb-6">
-              <Star className="w-5 h-5 fill-rating text-rating" />
-              <span>{listing.rating > 0 ? listing.rating.toFixed(1) : "New"}</span>
-              <span>·</span>
-              <span>{listing.review_count} reviews</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2 text-xl font-bold text-ink">
+                <Star className="w-5 h-5 fill-rating text-rating" />
+                <span>{listing.rating > 0 ? listing.rating.toFixed(1) : "New"}</span>
+                <span>·</span>
+                <span>{listing.review_count} reviews</span>
+              </div>
+
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(true)}
+                  className="px-4 py-2 border border-gray-300 hover:border-ink hover:bg-surface rounded-full text-xs font-bold text-ink transition-colors"
+                >
+                  Leave a review
+                </button>
+              ) : (
+                <Link
+                  href={`/login?redirect=/rooms/${listing.id}`}
+                  className="px-4 py-2 border border-gray-300 hover:border-ink hover:bg-surface rounded-full text-xs font-bold text-ink transition-colors"
+                >
+                  Log in to review
+                </Link>
+              )}
             </div>
+
+            {/* Review Submission Modal */}
+            {showReviewModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="bg-white rounded-card max-w-lg w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewModal(false)}
+                    className="absolute top-4 right-4 text-muted hover:text-ink p-1 rounded-full"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <h3 className="text-lg font-bold text-ink mb-1">Leave a Review</h3>
+                  <p className="text-xs text-muted mb-4">
+                    Share your genuine thoughts on staying at {listing.title}.
+                  </p>
+
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    {reviewError && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs">
+                        {reviewError}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-bold text-ink mb-1">Rating</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setReviewRating(star)}
+                            className="p-1 text-rating focus:outline-none"
+                          >
+                            <Star
+                              className={`w-6 h-6 ${
+                                star <= reviewRating ? "fill-rating text-rating" : "text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        ))}
+                        <span className="text-xs font-bold text-muted ml-2">{reviewRating} / 5</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-ink mb-1">
+                        Review Details <span className="text-muted font-normal">({reviewText.length}/2000)</span>
+                      </label>
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        maxLength={2000}
+                        rows={4}
+                        placeholder="Write your review here..."
+                        className="w-full border border-gray-300 rounded-lg p-3 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowReviewModal(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-full text-xs font-semibold text-ink hover:bg-surface"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={reviewSubmitting || !reviewText.trim()}
+                        className="px-5 py-2 bg-primary hover:bg-[#e03150] text-white rounded-full text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        {reviewSubmitting ? "Submitting..." : "Submit Review"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {listing.reviews.map((rev) => (
