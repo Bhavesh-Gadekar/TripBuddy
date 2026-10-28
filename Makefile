@@ -1,4 +1,4 @@
-.PHONY: up down migrate test reseed clean
+.PHONY: up down migrate test reseed smoke clean
 
 up:
 	docker compose up -d --build
@@ -14,6 +14,9 @@ test:
 
 reseed:
 	docker compose exec api python /app/scripts/seed.py
+
+smoke:
+	docker compose exec api python /app/scripts/smoke_automation.py
 
 clean:
 	docker compose down -v

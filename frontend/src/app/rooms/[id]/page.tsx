@@ -213,6 +213,10 @@ export default function ListingDetailPage() {
           <img
             src={primaryImage}
             alt={listing.title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1000&auto=format&fit=crop&q=80";
+            }}
             className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
           />
         </div>
@@ -224,6 +228,10 @@ export default function ListingDetailPage() {
                   <img
                     src={img}
                     alt={`${listing.title} ${i + 1}`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1000&auto=format&fit=crop&q=80";
+                    }}
                     className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
                   />
                 </div>
@@ -251,7 +259,15 @@ export default function ListingDetailPage() {
             <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200 shrink-0">
               {listing.host.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={listing.host.avatar} alt={listing.host.name} className="w-full h-full object-cover" />
+                <img
+                  src={listing.host.avatar}
+                  alt={listing.host.name}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80";
+                  }}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-ink text-white font-bold">
                   {listing.host.name.charAt(0)}
@@ -398,7 +414,7 @@ export default function ListingDetailPage() {
                       <div>
                         <p className="text-sm font-bold text-ink">{rev.author_name}</p>
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: rev.rating }).map((_, i) => (
+                          {Array.from({ length: Math.max(0, Math.min(5, rev.rating || 5)) }).map((_, i) => (
                             <Star key={i} className="w-3 h-3 fill-rating text-rating" />
                           ))}
                         </div>
