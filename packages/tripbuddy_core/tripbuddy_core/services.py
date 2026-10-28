@@ -3,19 +3,23 @@ import uuid
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, asc, not_, exists
-from tripbuddy_core.models import Listing, Review, User, Booking
+from tripbuddy_core.models import Listing, Review, User, Booking, Message
 from tripbuddy_core.errors import (
     ResourceNotFoundError,
     DatesUnavailableError,
     InvalidGuestsError,
     InvalidDatesError,
     UnauthorizedError,
+    ValidationError,
 )
 from tripbuddy_core.schemas import (
     ListingCard,
     ListingDetail,
     HostSummary,
     ReviewOut,
+    ReviewCreate,
+    MessageCreate,
+    MessageOut,
     PaginatedListings,
     UserProfilePublic,
     UserProfileFull,
@@ -426,5 +430,172 @@ def get_user_trips_service(db: Session, user_id: str) -> List[BookingOut]:
             )
         )
     return results
+
+
+# --- Phase 5: Reviews and Messaging Service Logic ---
+
+
+def create_review_service(
+    db: Session,
+    user: User,
+    listing_id: str,
+    rating: int,
+    text: str,
+) -> ReviewOut:
+    """Submit a review for any listing. Any logged-in user can submit without requiring a booking."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise ResourceNotFoundError(f"Listing '{listing_id}' not found")
+
+    if rating < 1 or rating > 5:
+        raise ValidationError("Rating must be between 1 and 5")
+
+    if not text or len(text.strip()) == 0:
+        raise ValidationError("Review text cannot be empty")
+
+    if len(text) > 2000:
+        raise ValidationError("Review text cannot exceed 2000 characters")
+
+    # Store text exactly as submitted (no sanitization, filtering, or trimming)
+    review_id = f"rev-{uuid.uuid4().hex[:8]}"
+    review = Review(
+        id=review_id,
+        listing_id=listing_id,
+        author_name=user.name,
+        rating=rating,
+        text=text,
+        created_at=datetime.datetime.utcnow(),
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    return ReviewOut(
+        id=review.id,
+        listing_id=review.listing_id,
+        author_name=review.author_name,
+        rating=review.rating,
+        text=review.text,
+        created_at=review.created_at.isoformat() if review.created_at else "",
+    )
+
+
+def send_message_service(
+    db: Session,
+    sender_id: str,
+    body: str,
+    listing_id: Optional[str] = None,
+    booking_id: Optional[str] = None,
+    recipient: Optional[str] = None,
+) -> MessageOut:
+    """Send a message to a host or arbitrary recipient. Recipient is not restricted to platform users."""
+    if not body or len(body.strip()) == 0:
+        raise ValidationError("Message body cannot be empty")
+
+    if len(body) > 5000:
+        raise ValidationError("Message body cannot exceed 5000 characters")
+
+    resolved_recipient = recipient.strip() if recipient and recipient.strip() else None
+    resolved_booking_id = booking_id
+
+    if resolved_booking_id:
+        booking = db.query(Booking).filter(Booking.id == resolved_booking_id).first()
+        if not booking:
+            raise ResourceNotFoundError(f"Booking '{resolved_booking_id}' not found")
+        if not listing_id:
+            listing_id = booking.listing_id
+
+    # If recipient not explicitly given, default to listing's host
+    if not resolved_recipient and listing_id:
+        listing = db.query(Listing).filter(Listing.id == listing_id).first()
+        if listing:
+            resolved_recipient = listing.host_id
+
+    if not resolved_recipient:
+        raise ValidationError("Recipient could not be determined. Provide a recipient or listing/booking ID.")
+
+    msg_id = f"msg-{uuid.uuid4().hex[:8]}"
+    msg = Message(
+        id=msg_id,
+        booking_id=resolved_booking_id,
+        sender=sender_id,
+        recipient=resolved_recipient,
+        body=body,
+        created_at=datetime.datetime.utcnow(),
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    return MessageOut(
+        id=msg.id,
+        booking_id=msg.booking_id,
+        sender=msg.sender,
+        recipient=msg.recipient,
+        body=msg.body,
+        created_at=msg.created_at.isoformat() if msg.created_at else "",
+    )
+
+
+def get_thread_messages_service(
+    db: Session,
+    user: User,
+    booking_id: Optional[str] = None,
+    recipient: Optional[str] = None,
+) -> List[MessageOut]:
+    """Retrieve message thread enforcing participant ownership rules."""
+    query = db.query(Message)
+
+    if booking_id:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise ResourceNotFoundError(f"Booking '{booking_id}' not found")
+
+        listing = db.query(Listing).filter(Listing.id == booking.listing_id).first()
+        host_id = listing.host_id if listing else None
+
+        is_guest = booking.user_id == user.id
+        is_host = host_id == user.id
+        has_msg = (
+            db.query(Message)
+            .filter(
+                Message.booking_id == booking_id,
+                (Message.sender == user.id)
+                | (Message.recipient == user.id)
+                | (Message.recipient == user.email),
+            )
+            .first()
+            is not None
+        )
+
+        if not (is_guest or is_host or has_msg):
+            raise UnauthorizedError("You are not authorized to view messages for this booking")
+
+        query = query.filter(Message.booking_id == booking_id)
+
+    elif recipient:
+        query = query.filter(
+            ((Message.sender == user.id) & (Message.recipient == recipient))
+            | ((Message.sender == recipient) & ((Message.recipient == user.id) | (Message.recipient == user.email)))
+        )
+    else:
+        query = query.filter(
+            (Message.sender == user.id)
+            | (Message.recipient == user.id)
+            | (Message.recipient == user.email)
+        )
+
+    messages = query.order_by(asc(Message.created_at)).all()
+    return [
+        MessageOut(
+            id=m.id,
+            booking_id=m.booking_id,
+            sender=m.sender,
+            recipient=m.recipient,
+            body=m.body,
+            created_at=m.created_at.isoformat() if m.created_at else "",
+        )
+        for m in messages
+    ]
 
 

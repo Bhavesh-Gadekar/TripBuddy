@@ -137,4 +137,28 @@ class BookingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Phase 5: Reviews and Messaging Schemas
+class ReviewCreate(BaseModel):
+    rating: int
+    text: str
+
+
+class MessageCreate(BaseModel):
+    listing_id: Optional[str] = None
+    booking_id: Optional[str] = None
+    recipient: Optional[str] = None
+    body: str
+
+
+class MessageOut(BaseModel):
+    id: str
+    booking_id: Optional[str] = None
+    sender: str
+    recipient: str
+    body: str
+    created_at: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 

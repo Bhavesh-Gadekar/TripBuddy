@@ -35,3 +35,8 @@ class UnauthorizedError(TripBuddyError):
     def __init__(self, message: str = "Not authorized"):
         super().__init__(message, code="UNAUTHORIZED")
 
+
+class ValidationError(TripBuddyError):
+    def __init__(self, message: str = "Validation failed"):
+        super().__init__(message, code="VALIDATION_ERROR")
+
