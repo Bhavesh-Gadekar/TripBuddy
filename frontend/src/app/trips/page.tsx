@@ -226,6 +226,10 @@ export default function TripsPage() {
                       <img
                         src={b.listing_image || "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80"}
                         alt={b.listing_title || "Stay"}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80";
+                        }}
                         className="w-full h-full object-cover"
                       />
                     </div>

@@ -266,8 +266,12 @@ function BookContent() {
               <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-200 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={listing.images[0]}
+                  src={listing.images && listing.images[0] ? listing.images[0] : "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80"}
                   alt={listing.title}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80";
+                  }}
                   className="w-full h-full object-cover"
                 />
               </div>
