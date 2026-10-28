@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/context/AuthContext";
+import ConciergeChat from "@/components/ConciergeChat";
 
 export const metadata: Metadata = {
   title: "TripBuddy | Vacation Homes & Condo Rentals",
@@ -19,6 +20,7 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
+          <ConciergeChat />
         </AuthProvider>
       </body>
     </html>
