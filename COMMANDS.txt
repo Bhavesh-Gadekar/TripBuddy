@@ -1,0 +1,168 @@
+================================================================================
+                         TRIPBUDDY - CHEAT SHEET
+           Project Run Commands, Docker Reference & Git Guide
+================================================================================
+
+--------------------------------------------------------------------------------
+1. PROJECT RUN COMMANDS (TRIPBUDDY)
+--------------------------------------------------------------------------------
+
+▶ METHOD A: RUN WITH DOCKER (RECOMMENDED)
+Ensure Docker Desktop is open and running on your system.
+Run these commands from the project root (D:\TripBuddy):
+
+  1. Build and start all 4 containers in the background:
+     docker-compose up -d --build
+     (or modern syntax: docker compose up -d --build)
+
+  2. Run database migrations:
+     docker-compose exec api alembic upgrade head
+
+  3. Seed initial database data (22 listings, demo users, hosts, reviews):
+     docker-compose exec api python /app/scripts/seed.py
+
+  4. Stop the project:
+     docker-compose down
+
+  5. Stop and completely wipe data volumes (fresh start):
+     docker-compose down -v
+
+
+▶ METHOD B: RUN LOCALLY WITHOUT DOCKER (USING .venv & NODE)
+If you prefer running services directly on Windows with your .venv:
+
+  1. Activate Virtual Environment (PowerShell):
+     .\.venv\Scripts\Activate.ps1
+
+  2. Run Migrations & Seed (one-time setup):
+     .\.venv\Scripts\alembic upgrade head
+     .\.venv\Scripts\python scripts/seed.py
+
+  3. Start FastMCP Server (Terminal 1 - Port 8001):
+     .\.venv\Scripts\uvicorn app.server:app --app-dir services/mcp_server --port 8001 --reload
+
+  4. Start FastAPI Backend (Terminal 2 - Port 8000):
+     .\.venv\Scripts\uvicorn app.main:app --app-dir services/api --port 8000 --reload
+
+  5. Start Next.js Frontend (Terminal 3 - Port 3000):
+     cd frontend
+     npm run dev
+
+
+▶ RUN AUTOMATED TEST SUITE:
+  - Inside Docker:
+    docker-compose exec api pytest /app/tests
+
+  - Locally:
+    .\.venv\Scripts\pytest tests
+
+
+▶ SERVICE URLS & PORTS:
+  - Frontend (Next.js):     http://localhost:3000
+  - Backend API (FastAPI):  http://localhost:8000
+  - API Interactive Docs:   http://localhost:8000/docs
+  - API Health Check:       http://localhost:8000/health
+  - FastMCP Tool Server:    http://localhost:8001/health
+  - FastMCP Info:           http://localhost:8001/mcp
+  - PostgreSQL Database:    localhost:5432 (user: tripbuddy, pass: tripbuddy)
+
+
+▶ DEMO LOGIN CREDENTIALS:
+  All accounts use password: password123
+
+  - Alex Mercer (Demo Guest):      alex.mercer@tripbuddy.test
+  - Samantha Chen (Demo Guest):    samantha.chen@tripbuddy.test
+  - Rohan Deshmukh (Demo Guest):   rohan.deshmukh@tripbuddy.test
+  - Meera Joshi (Superhost, Goa):  meera.joshi@hosts.tripbuddy.test
+
+
+================================================================================
+2. IMPORTANT DOCKER & DOCKER-COMPOSE COMMANDS
+================================================================================
+
+▶ DOCKER-COMPOSE (PROJECT-SPECIFIC):
+  docker-compose ps                   # Check status of running containers
+  docker-compose logs -f              # Follow live logs from all containers
+  docker-compose logs -f api          # Follow logs for API container only
+  docker-compose logs -f frontend     # Follow logs for Frontend container only
+  docker-compose logs -f mcp_server   # Follow logs for MCP container only
+  docker-compose logs -f postgres     # Follow logs for Postgres container only
+  docker-compose restart              # Restart all containers
+  docker-compose restart api          # Restart a single container (e.g. api)
+  docker-compose exec api sh          # Open interactive shell inside api container
+  docker-compose exec postgres psql -U tripbuddy -d tripbuddy  # Open Postgres DB prompt
+
+▶ DOCKER SYSTEM & CONTAINER MANAGEMENT:
+  docker ps                           # List running containers
+  docker ps -a                        # List all containers (including stopped)
+  docker stop <container_id_or_name>  # Stop a running container
+  docker start <container_id_or_name> # Start a stopped container
+  docker restart <container_id>       # Restart a container
+  docker rm <container_id>            # Remove a stopped container
+  docker rm -f <container_id>         # Force-stop and remove a container
+  docker logs <container_id>          # View logs of a container
+  docker logs -f --tail 100 <id>      # View last 100 log lines and stream
+
+▶ DOCKER IMAGES:
+  docker images                       # List all downloaded/built images
+  docker rmi <image_id>               # Remove an image
+  docker rmi -f <image_id>            # Force remove an image
+
+▶ DOCKER CLEANUP (FREE DISK SPACE):
+  docker system prune                 # Remove stopped containers & unused networks
+  docker system prune -a              # Remove all unused containers, networks & images
+  docker volume ls                    # List all volumes
+  docker volume prune                 # Delete all unused volumes
+
+
+================================================================================
+3. IMPORTANT GIT COMMANDS
+================================================================================
+
+▶ DAILY WORKFLOW:
+  git status                          # Check modified, staged, and untracked files
+  git diff                            # View unstaged changes
+  git diff --staged                   # View staged changes
+  git add <filename>                  # Stage a specific file
+  git add .                           # Stage all modified & new files
+  git commit -m "Your message"        # Commit staged files with a message
+  git commit -am "Your message"       # Stage modified files and commit in one step
+  git push origin <branch-name>       # Push local commits to remote repository
+  git pull origin <branch-name>       # Fetch and merge latest changes from remote
+
+▶ BRANCHING & SWITCHING:
+  git branch                          # List local branches (* marks current)
+  git branch -a                       # List local and remote branches
+  git branch <branch-name>            # Create a new branch
+  git switch -c <new-branch>          # Create and switch to new branch (or: git checkout -b)
+  git switch <branch-name>            # Switch to an existing branch (or: git checkout)
+  git branch -d <branch-name>         # Delete a local branch (safe delete)
+  git branch -D <branch-name>         # Force delete a local branch
+  git merge <branch-name>             # Merge specified branch into current branch
+
+▶ STASHING (TEMPORARILY SAVE WORK WITHOUT COMMITTING):
+  git stash                           # Save unstaged/staged changes to stash
+  git stash save "work in progress"   # Save stash with a custom description
+  git stash list                      # View list of stashed changes
+  git stash pop                       # Apply latest stash and remove from list
+  git stash apply                     # Apply latest stash but keep in stash list
+  git stash drop                      # Discard the latest stash
+  git stash clear                     # Delete all stashes
+
+▶ INSPECTING HISTORY:
+  git log                             # Full commit history
+  git log --oneline -n 10             # Compact history showing last 10 commits
+  git log --graph --oneline --all     # Visual branch history graph
+  git show <commit_hash>              # Inspect changes made in a specific commit
+
+▶ UNDOING & FIXING CHANGES:
+  git restore <filename>              # Discard changes in working directory (unmodified state)
+  git restore --staged <filename>     # Unstage a file (keep local changes)
+  git commit --amend -m "New message" # Update message of the most recent commit
+  git reset --soft HEAD~1             # Undo last commit, but KEEP changes staged
+  git reset --mixed HEAD~1            # Undo last commit, keep changes unstaged
+  git reset --hard HEAD               # DISCARD ALL uncommitted changes (careful!)
+  git reset --hard HEAD~1             # DISCARD last commit and its changes (careful!)
+
+================================================================================
+
