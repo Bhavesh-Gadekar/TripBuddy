@@ -202,7 +202,7 @@ function BookContent() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-ink">Pay with (Sandboxed Mock)</h2>
               <div className="flex items-center gap-1 text-xs text-muted">
-                <Lock className="w-3.5 h-3.5" /> Fictional sandboxed card
+                <Lock className="w-3.5 h-3.5" /> Sandboxed mock card (no real processing)
               </div>
             </div>
 
@@ -244,7 +244,7 @@ function BookContent() {
               </div>
 
               <div className="text-[11px] text-muted leading-relaxed">
-                By selecting the button below, you agree to the Host&apos;s House Rules and TripBuddy&apos;s fictional reservation terms.
+                Sandboxed mock card form &mdash; no real payment is processed. By selecting the button below, you agree to the Host&apos;s House Rules and TripBuddy&apos;s fictional reservation terms.
               </div>
 
               <button
